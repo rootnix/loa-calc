@@ -238,7 +238,7 @@ export class RefiningComponent implements OnInit, OnDestroy {
       ([name, amount]) => ({
         name,
         amount,
-        price: priceForm[name] * amount,
+        price: (name === '골드' ? 1 : priceForm[name] ?? 0) * amount,
       })
     );
     this.materialPrice = this.materials.reduce((sum, x) => sum + x.price, 0);

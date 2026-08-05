@@ -48,7 +48,7 @@
         <div class="material-info" *ngFor="let breath of breathes">
           <img [attr.src]="'assets/' + breath.name + '.png'" />
           <span>
-            + {{ breath.prob | percent : ".2-2" }} x 0 ~
+            + {{ breath.prob | percent : ".2-6" }} x 0 ~
             {{ breath.amount | number : ".0-0" }}<br />개당
             {{ breath.price | number : ".2-2" }}골드</span
           >

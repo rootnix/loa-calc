@@ -5,10 +5,11 @@
       <mat-select formControlName="type">
         <mat-option value="weapon">무기</mat-option>
         <mat-option value="armor">방어구</mat-option>
+        <mat-option value="wristguard">완갑</mat-option>
       </mat-select>
     </mat-form-field>
   </div>
-  <div>
+  <div *ngIf="itemForm.get('type')?.value !== 'wristguard'">
     <mat-form-field>
       <mat-label>장비 등급</mat-label>
       <mat-select formControlName="grade">
@@ -64,10 +65,18 @@
     </mat-form-field>
   </div>
   <div>
-    <mat-checkbox formControlName="applyResearch">영지 연구 적용</mat-checkbox>
+    <mat-checkbox
+      *ngIf="itemForm.get('type')?.value !== 'wristguard'"
+      formControlName="applyResearch"
+      >영지 연구 적용</mat-checkbox
+    >
   </div>
   <div>
-    <mat-checkbox formControlName="applyHyperExpress">모챌익 성장지원 적용</mat-checkbox>
+    <mat-checkbox
+      *ngIf="itemForm.get('type')?.value !== 'wristguard'"
+      formControlName="applyHyperExpress"
+      >모챌익 성장지원 적용</mat-checkbox
+    >
   </div>
   <!-- <div>
     <mat-checkbox formControlName="applyKamenRoad"

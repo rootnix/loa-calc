@@ -129,6 +129,90 @@ const t4WeaponBreathTable: Record<number, Record<string, [number, number]>> = {
   },
 };
 
+// 1~10강은 확인된 수치다. 11강 이후는 강화 구간마다 최대 수량이 5개씩
+// 늘어난다고 추정하고, 두 숨결을 최대로 넣었을 때 기본 성공률만큼 추가되도록
+// 개당 확률을 역산했다. 실제 수치가 확인되면 이 구간 설정만 수정하면 된다.
+const wristguardBreathTiers = [
+  { from: 1, to: 5, baseProb: 0.15, maxAmount: 20 },
+  { from: 6, to: 10, baseProb: 0.1, maxAmount: 25 },
+  { from: 11, to: 15, baseProb: 0.05, maxAmount: 30 },
+  { from: 16, to: 20, baseProb: 0.03, maxAmount: 35 },
+  { from: 21, to: 25, baseProb: 0.015, maxAmount: 40 },
+];
+
+const wristguardBreathTable = wristguardBreathTiers.reduce<
+  Record<number, Record<string, [number, number]>>
+>((table, { from, to, baseProb, maxAmount }) => {
+  const probabilityPerItem = baseProb / (maxAmount * 2);
+  for (let target = from; target <= to; target += 1) {
+    table[target] = {
+      용암: [maxAmount, probabilityPerItem],
+      빙하: [maxAmount, probabilityPerItem],
+    };
+  }
+  return table;
+}, {});
+
+const wristguardBaseProbs = [
+  0.15, 0.15, 0.15, 0.15, 0.15, 0.1, 0.1, 0.1, 0.1, 0.1, 0.05, 0.05,
+  0.05, 0.05, 0.05, 0.03, 0.03, 0.03, 0.03, 0.03, 0.015, 0.015, 0.015,
+  0.015, 0.015,
+];
+
+const wristguardRefineFragments = [
+  14500, 15000, 15630, 16280, 16960, 17670, 18410, 19180, 19980, 20810,
+  21680, 22590, 23530, 24510, 25530, 26600, 27710, 28870, 30080, 31340,
+  32650, 34020, 35440, 36920, 38470,
+];
+
+const wristguardDestructionStones = [
+  600, 620, 640, 660, 680, 700, 720, 745, 770, 795, 820, 845, 870, 900,
+  930, 960, 990, 1020, 1055, 1090, 1125, 1160, 1200, 1240, 1280,
+];
+
+const wristguardGuardianStones = [
+  1800, 1860, 1925, 1990, 2055, 2125, 2195, 2270, 2345, 2425, 2505, 2590,
+  2680, 2770, 2865, 2965, 3065, 3170, 3280, 3390, 3505, 3625, 3750, 3880,
+  4015,
+];
+
+const wristguardLeapstones = [
+  30, 31, 32, 33, 34, 36, 38, 40, 42, 44, 46, 48, 50, 53, 56, 59, 62, 65,
+  68, 72, 76, 80, 84, 89, 94,
+];
+
+const wristguardFusionMaterials = [
+  22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 36, 38, 40, 42, 44,
+  46, 48, 50, 53, 56, 59, 62,
+];
+
+const wristguardGold = [
+  5200, 5400, 5610, 5830, 6060, 6300, 6550, 6810, 7080, 7360, 7650, 7950,
+  8260, 8590, 8930, 9280, 9650, 10030, 10430, 10840, 11270, 11720, 12180,
+  12660, 13160,
+];
+
+const wristguardData = Object.fromEntries(
+  wristguardBaseProbs.map((baseProb, index) => {
+    const target = index + 1;
+    return [
+      target,
+      {
+        baseProb,
+        amount: {
+          운명파편: wristguardRefineFragments[index],
+          운명의파괴석결정: wristguardDestructionStones[index],
+          운명의수호석결정: wristguardGuardianStones[index],
+          위운돌: wristguardLeapstones[index],
+          상급아비도스: wristguardFusionMaterials[index],
+          골드: wristguardGold[index],
+        },
+        breath: wristguardBreathTable[target] ?? {},
+      },
+    ];
+  })
+) as Record<number, RefineTableData>;
+
 export const refineData: Record<
   string,
   Record<string, Record<number, RefineTableData>>
@@ -2143,16 +2227,21 @@ export const refineData: Record<
       },
     },
   },
+  wristguard: {
+    wristguard: wristguardData,
+  },
 };
 
 export function getTargetList(
   itemType: string | undefined,
   itemGrade: string | undefined
 ) {
-  if (!itemType || !itemGrade) {
+  if (!itemType) {
     return [];
   }
-  return Object.keys(refineData[itemType][itemGrade]).map((x) => +x);
+  const grade = itemType === 'wristguard' ? 'wristguard' : itemGrade;
+  const data = grade ? refineData[itemType]?.[grade] : undefined;
+  return data ? Object.keys(data).map((x) => +x) : [];
 }
 
 export function getRefineTable(
@@ -2162,10 +2251,16 @@ export function getRefineTable(
   applyResearch: boolean,
   applyHyperExpress: boolean
 ): RefineTable | undefined {
-  if (!itemType || !itemGrade || !refineTarget) {
+  if (!itemType || !refineTarget) {
     return undefined;
   }
-  const data = refineData[itemType][itemGrade][refineTarget];
+  const grade = itemType === 'wristguard' ? 'wristguard' : itemGrade;
+  const data = grade
+    ? refineData[itemType]?.[grade]?.[refineTarget]
+    : undefined;
+  if (!data) {
+    return undefined;
+  }
 
   let additionalProb = 0;
   let costReduction = 0;

@@ -21,10 +21,10 @@ function getPrice(
   amountMap: Record<string, number>
 ) {
   return Object.entries(amountMap)
-    .map(
-      ([key, amount]) =>
-        priceMap[key] * Math.max(amount - (bindedMap[key] ?? 0), 0)
-    )
+    .map(([key, amount]) => {
+      const unitPrice = key === '골드' ? 1 : priceMap[key] ?? 0;
+      return unitPrice * Math.max(amount - (bindedMap[key] ?? 0), 0);
+    })
     .reduce((sum, x) => sum + x, 0);
 }
 
